@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CubeInsight</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            --bg: #F0F7F4;
+            --card: #FFFFFF;
+            --primary: #8ED1B5;
+            --primary-hover: #75C0A1;
+            --mint-soft: #E6F4EF;
+            --mint-deep: #4A8F73;
+            --text-main: #333333;
+            --text-light: #777777;
+        }
+
+        body {
+            font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(180deg, #F6FBF9 0%, #ECF6F2 100%);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--card);
+            width: 100%;
+            max-width: 960px;
+            border-radius: 16px;
+            box-shadow: 0 16px 30px rgba(74, 143, 115, 0.12);
+            padding: 30px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            letter-spacing: 0.4px;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            background-color: var(--mint-soft);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            color: #567D6A;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            background-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 8px rgba(142, 209, 181, 0.4);
+        }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .upload {
+            display: block;
+            border: none;
+            border-radius: 12px;
+            padding: 24px 20px;
+            margin-bottom: 15px;
+            background-color: #F7FCFA;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+            box-shadow: inset 0 0 0 1px rgba(142, 209, 181, 0.4);
+        }
+
+        .upload:hover {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: none;
+        }
+
+        .upload:hover p { color: rgba(255,255,255,0.9); }
+        .upload h3 { margin: 0 0 8px 0; font-size: 16px; }
+        .upload p { margin: 0; font-size: 13px; color: var(--text-light); }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #F7FCFA;
+            padding: 10px 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .group input, .group select {
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: inherit;
+            color: var(--text-main);
+            outline: none;
+            background-color: #ffffff;
+            box-shadow: inset 0 0 0 1px rgba(141, 198, 173, 0.5);
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-large { width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; }
+
+        #chart {
+            display: none;
+            height: 550px;
+            width: 100%;
+            border-radius: 12px;
+            background-color: #FBFEFD;
+        }
+
+        #sum-axis-hover {
+            display: none;
+            margin: 8px 0 10px 0;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #EEF8F3;
+            font-size: 13px;
+            color: #3F6854;
+            box-shadow: inset 0 0 0 1px rgba(141, 198, 173, 0.4);
+        }
+
+        #proc-note {
+            margin: 0 0 12px 0;
+            font-size: 13px;
+            color: #587969;
+        }
+
+        #proc-preview {
+            display: none;
+            margin-top: 14px;
+            padding: 14px;
+            border-radius: 12px;
+            background: #F7FCFA;
+        }
+
+        .preview-summary {
+            font-size: 13px;
+            color: #486D5A;
+            margin-bottom: 8px;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            text-align: left;
+            padding: 8px 6px;
+            border-bottom: 1px solid rgba(141, 198, 173, 0.35);
+            white-space: nowrap;
+        }
+
+        .preview-table th {
+            color: #486D5A;
+            font-weight: 600;
+        }
+
+        .tutorial {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #F7FCFA;
+        }
+
+        .tutorial h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #4A6E5C;
+        }
+
+        .tutorial p {
+            margin: 4px 0;
+            font-size: 13px;
+            color: #557868;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 18px;
+            }
+
+            .tab {
+                flex: 1;
+            }
+
+            #chart {
+                height: 430px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>CubeInsight</h1>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('sum')">成绩趋势</button>
+        <button class="tab" onclick="switchTab('proc')">数据处理</button>
+    </div>
+
+    <div id="sum" class="panel active">
+        <label class="upload" for="file-sum">
+            <h3 id="t-sum">上传文件 (.txt)</h3>
+            <p id="d-sum">生成图表</p>
+            <input type="file" id="file-sum" accept=".txt" style="display: none;" onchange="loadSum(this)">
+        </label>
+
+        <div id="ctrls" class="row" style="display: none;">
+            <div class="group">
+                <span>分组:</span>
+                <select id="sel" onchange="draw()"></select>
+            </div>
+            <div class="group">
+                <span>范围:</span>
+                <input type="date" id="d-start" onchange="zoom()">
+                <span>至</span>
+                <input type="date" id="d-end" onchange="zoom()">
+            </div>
+            <button class="btn" onclick="reset()">重置</button>
+        </div>
+
+        <div id="sum-axis-hover">在图表内移动到某一天所在纵向区域，可查看该日最佳数据</div>
+
+        <div id="chart"></div>
+
+        <div class="tutorial">
+            <h4>使用教程</h4>
+            <p>1. 上传 txt 文件后选择分组查看图表。</p>
+            <p>2. 在图中悬停散点查看对应单次成绩。</p>
+            <p>3. 在图表内移动到某天所在区域，即可在上方信息栏看到该日最佳 single、最佳 mo3、最佳 ao5 与次数。</p>
+            <p>4. 使用日期输入框和底部滑块快速缩放区间。</p>
+        </div>
+    </div>
+
+    <div id="proc" class="panel">
+        <p id="proc-note">区间为空时默认全量</p>
+        <div class="row" style="margin-bottom: 20px;">
+            <div class="group">
+                <span>区间:</span>
+                <input type="date" id="p-start">
+                <span>至</span>
+                <input type="date" id="p-end">
+            </div>
+        </div>
+
+        <label class="upload" for="file-base">
+            <h3 id="t-base">基础文件</h3>
+            <input type="file" id="file-base" accept=".txt" style="display: none;" onchange="setName(this, 't-base')">
+        </label>
+
+        <label class="upload" for="file-src" style="background-color: #F3F9F6;">
+            <h3 id="t-src">补充文件</h3>
+            <input type="file" id="file-src" accept=".txt" style="display: none;" onchange="setName(this, 't-src')">
+        </label>
+
+        <div id="proc-preview"></div>
+
+        <button class="btn btn-large" onclick="process()">执行</button>
+
+        <div class="tutorial">
+            <h4>使用教程</h4>
+            <p>1. 仅上传基础文件可直接按日期区间截取并导出。</p>
+            <p>2. 同时上传补充文件会执行合并，并按 timestamp+scramble 去重。</p>
+            <p>3. 区间为空时保留全量数据，填写区间后只保留区间内记录。</p>
+            <p>4. 执行后查看统计预览，再使用自动下载的结果文件。</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const AppState = {
+        chart: null,
+        raw: null,
+        names: {},
+        chartDays: [],
+        dayStats: {},
+        chartResizeBound: false
+    };
+
+    const Utils = {
+        formatDayFromMs(tsMs) {
+            const d = new Date(tsMs);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        },
+        safeParseJson(text) {
+            try {
+                return JSON.parse(text);
+            } catch (err) {
+                alert('文件不是有效 JSON');
+                return null;
+            }
+        },
+        parseSessionMeta(data) {
+            const out = {};
+            const rawSessionData = data?.properties?.sessionData;
+            if (!rawSessionData) return out;
+
+            const meta = typeof rawSessionData === 'string' ? Utils.safeParseJson(rawSessionData) : rawSessionData;
+            if (!meta || typeof meta !== 'object') return out;
+
+            Object.keys(meta).forEach((k) => {
+                if (meta[k] && meta[k].name) out[String(k)] = { ...meta[k] };
+            });
+            return out;
+        },
+        parseSessionNames(data) {
+            const out = {};
+            const meta = Utils.parseSessionMeta(data);
+            Object.keys(meta).forEach((k) => {
+                out[k] = meta[k].name;
+            });
+            return out;
+        },
+        getSessionKeys(data) {
+            return Object.keys(data || {}).filter((k) => /^session\d+$/.test(k) && Array.isArray(data[k]));
+        },
+        normalizeTimeInSec(solve) {
+            if (!Array.isArray(solve) || !Array.isArray(solve[0])) return null;
+            const penalty = Number(solve[0][0]);
+            let timeMs = Number(solve[0][1]);
+            if (!Number.isFinite(timeMs) || penalty === -1) return null;
+            if (penalty === 2000) timeMs += 2000;
+            return +(timeMs / 1000).toFixed(2);
+        },
+        solveDay(solve) {
+            const tsSec = Number(solve?.[3]);
+            if (!Number.isFinite(tsSec)) return null;
+            return Utils.formatDayFromMs(tsSec * 1000);
+        },
+        readAsJson(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(Utils.safeParseJson(e.target.result));
+                reader.readAsText(file);
+            });
+        },
+        deepClone(obj) {
+            return JSON.parse(JSON.stringify(obj));
+        },
+        buildSolveKey(solve) {
+            const ts = Number(solve?.[3]);
+            const scramble = String(solve?.[1] || '');
+            if (!Number.isFinite(ts)) return null;
+            return `${ts}|${scramble}`;
+        },
+        isInRange(day, start, end) {
+            if (!day) return false;
+            if (start && day < start) return false;
+            if (end && day > end) return false;
+            return true;
+        },
+        toFixed2(v) {
+            return Number.isFinite(v) ? v.toFixed(2) : '-';
+        },
+        getPtSize(visibleDays) {
+            return Math.max(8, Math.min(32, 80 / Math.sqrt(Math.max(1, visibleDays))));
+        }
+    };
+
+    const SummaryModule = {
+        rollingBest(times, windowSize, dropBestWorst) {
+            if (times.length < windowSize) return null;
+            let best = Infinity;
+
+            for (let i = 0; i <= times.length - windowSize; i += 1) {
+                const window = times.slice(i, i + windowSize);
+                let sample = window;
+                if (dropBestWorst) {
+                    const sorted = [...window].sort((a, b) => a - b);
+                    sample = sorted.slice(1, sorted.length - 1);
+                }
+                const avg = sample.reduce((sum, t) => sum + t, 0) / sample.length;
+                if (avg < best) best = avg;
+            }
+
+            return Number.isFinite(best) ? +best.toFixed(2) : null;
+        },
+        buildSessionStats(data, sessionKey) {
+            const solves = data?.[sessionKey];
+            if (!Array.isArray(solves)) return null;
+
+            const map = new Map();
+            solves.forEach((solve) => {
+                const sec = Utils.normalizeTimeInSec(solve);
+                const day = Utils.solveDay(solve);
+                const ts = Number(solve?.[3] || 0);
+                if (sec === null || !day) return;
+                if (!map.has(day)) map.set(day, { sum: 0, count: 0, records: [] });
+                const row = map.get(day);
+                row.sum += sec;
+                row.count += 1;
+                row.records.push({ sec, ts });
+            });
+
+            const days = Array.from(map.keys()).sort();
+            if (!days.length) return null;
+
+            const scatter = [];
+            const line = [];
+            const dayStats = {};
+
+            days.forEach((day) => {
+                const row = map.get(day);
+                row.records.sort((a, b) => a.ts - b.ts);
+                const times = row.records.map((r) => r.sec);
+                line.push(+((row.sum / row.count).toFixed(2)));
+                times.forEach((sec) => scatter.push([day, sec]));
+
+                dayStats[day] = {
+                    count: times.length,
+                    bestSingle: Math.min(...times),
+                    bestMo3: SummaryModule.rollingBest(times, 3, false),
+                    bestAo5: SummaryModule.rollingBest(times, 5, true)
+                };
+            });
+
+            return { days, scatter, line, dayStats };
+        },
+        itemTooltipFormatter(param) {
+            const day = Array.isArray(param.data) ? param.data[0] : (param.name || '-');
+            if (param.seriesType === 'scatter') {
+                const sec = Array.isArray(param.data) ? param.data[1] : param.value;
+                return `${day}<br/>单次: ${Utils.toFixed2(Number(sec))}`;
+            }
+
+            if (param.seriesType === 'line') {
+                const stat = AppState.dayStats[day];
+                const avg = Number(param.value);
+                return [
+                    day,
+                    `日均: ${Utils.toFixed2(avg)}`,
+                    stat ? `练习次数: ${stat.count}` : ''
+                ].filter(Boolean).join('<br/>');
+            }
+
+            return '';
+        },
+        updateAxisHover(day) {
+            const el = document.getElementById('sum-axis-hover');
+            if (!el) return;
+            el.style.display = 'block';
+
+            if (!day || !AppState.dayStats[day]) {
+                el.innerText = '触发方式：在图表内移动到某一天所在纵向区域，可查看该日最佳数据';
+                return;
+            }
+
+            const stat = AppState.dayStats[day];
+            el.innerText = `${day} | 单日最佳 single ${Utils.toFixed2(stat.bestSingle)} | 单日最佳 mo3 ${Utils.toFixed2(stat.bestMo3)} | 单日最佳 ao5 ${Utils.toFixed2(stat.bestAo5)} | 单日次数 ${stat.count}`;
+        },
+        load(input) {
+            if (!input.files[0]) return;
+            const file = input.files[0];
+            document.getElementById('t-sum').innerText = file.name;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                AppState.raw = Utils.safeParseJson(e.target.result);
+                if (!AppState.raw) return;
+                AppState.names = Utils.parseSessionNames(AppState.raw);
+
+                const sel = document.getElementById('sel');
+                sel.innerHTML = '';
+                let first = null;
+
+                Utils.getSessionKeys(AppState.raw).forEach((k) => {
+                    if (!AppState.raw[k].length) return;
+                    if (!first) first = k;
+                    const num = k.replace('session', '');
+                    const opt = document.createElement('option');
+                    opt.value = k;
+                    opt.textContent = `${AppState.names[num] || ('分组' + num)} (${AppState.raw[k].length})`;
+                    sel.appendChild(opt);
+                });
+
+                if (!first) {
+                    alert('没有可用分组');
+                    return;
+                }
+
+                document.getElementById('ctrls').style.display = 'flex';
+                document.getElementById('chart').style.display = 'block';
+                SummaryModule.draw(first);
+                document.getElementById('d-sum').innerText = '渲染完成';
+            };
+            reader.readAsText(file);
+        },
+        draw(key) {
+            const sessionKey = key || document.getElementById('sel').value;
+            if (!AppState.raw || !AppState.raw[sessionKey]) return;
+
+            const stats = SummaryModule.buildSessionStats(AppState.raw, sessionKey);
+            if (!stats) {
+                alert('该分组没有有效成绩');
+                return;
+            }
+
+            const { days, scatter, line, dayStats } = stats;
+            AppState.chartDays = days;
+            AppState.dayStats = dayStats;
+            document.getElementById('d-start').value = days[0];
+            document.getElementById('d-end').value = days[days.length - 1];
+            SummaryModule.updateAxisHover('');
+
+            if (AppState.chart) AppState.chart.dispose();
+            AppState.chart = echarts.init(document.getElementById('chart'));
+
+            AppState.chart.setOption({
+                tooltip: {
+                    trigger: 'item',
+                    formatter: SummaryModule.itemTooltipFormatter
+                },
+                legend: { data: ['单次', '日均'], top: 10 },
+                grid: { left: '6%', right: '4%', bottom: '12%', top: '12%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: days,
+                    boundaryGap: true,
+                    axisPointer: { show: true, type: 'line' }
+                },
+                yAxis: { type: 'value', scale: true },
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: 0, zoomOnMouseWheel: false, moveOnMouseWheel: true, moveOnMouseMove: true },
+                    { type: 'slider', xAxisIndex: 0, bottom: '2%', height: 24 },
+                    { type: 'inside', yAxisIndex: 0, zoomOnMouseWheel: true, moveOnMouseWheel: false, moveOnMouseMove: false }
+                ],
+                series: [
+                    {
+                        id: 'sc',
+                        name: '单次',
+                        type: 'scatter',
+                        symbolSize: Utils.getPtSize(days.length),
+                        itemStyle: { color: 'rgba(102, 187, 106, 0.25)' },
+                        data: scatter
+                    },
+                    {
+                        name: '日均',
+                        type: 'line',
+                        smooth: true,
+                        symbol: 'emptyCircle',
+                        symbolSize: 8,
+                        lineStyle: { color: '#43A047', width: 2 },
+                        itemStyle: { color: '#43A047' },
+                        data: line
+                    }
+                ]
+            });
+
+            SummaryModule.updateScatterSizeByView();
+            AppState.chart.on('dataZoom', SummaryModule.updateScatterSizeByView);
+            AppState.chart.on('updateAxisPointer', (event) => {
+                const axisInfo = event.axesInfo && event.axesInfo[0];
+                if (!axisInfo) {
+                    SummaryModule.updateAxisHover('');
+                    return;
+                }
+
+                let day = axisInfo.value;
+                if (typeof day === 'number') day = AppState.chartDays[day] || '';
+                SummaryModule.updateAxisHover(day);
+            });
+            AppState.chart.on('globalout', () => {
+                SummaryModule.updateAxisHover('');
+            });
+
+            if (!AppState.chartResizeBound) {
+                window.addEventListener('resize', () => {
+                    if (AppState.chart) AppState.chart.resize();
+                });
+                AppState.chartResizeBound = true;
+            }
+        },
+        updateScatterSizeByView() {
+            if (!AppState.chart || !AppState.chartDays.length) return;
+            const opt = AppState.chart.getOption();
+            const zoomX = (opt.dataZoom || []).find((z) => String(z.xAxisIndex) === '0');
+            if (!zoomX) return;
+
+            const total = AppState.chartDays.length;
+            const startPct = Number(zoomX.start ?? 0);
+            const endPct = Number(zoomX.end ?? 100);
+            const startIdx = Math.max(0, Math.floor((startPct / 100) * total));
+            const endIdx = Math.min(total - 1, Math.ceil((endPct / 100) * total) - 1);
+            const visibleDays = Math.max(1, endIdx - startIdx + 1);
+
+            AppState.chart.setOption({
+                series: [{ id: 'sc', symbolSize: Utils.getPtSize(visibleDays) }]
+            });
+        },
+        zoom() {
+            if (!AppState.chart) return;
+            const d1 = document.getElementById('d-start').value;
+            const d2 = document.getElementById('d-end').value;
+            if (!d1 || !d2) return;
+
+            const dates = AppState.chart.getOption().xAxis[0].data;
+            let i1 = dates.indexOf(d1);
+            let i2 = dates.indexOf(d2);
+            if (i1 < 0) i1 = 0;
+            if (i2 < 0) i2 = dates.length - 1;
+            if (i2 < i1) [i1, i2] = [i2, i1];
+
+            AppState.chart.dispatchAction({
+                type: 'dataZoom',
+                dataZoomIndex: 1,
+                startValue: dates[i1],
+                endValue: dates[i2]
+            });
+        },
+        reset() {
+            if (!AppState.chart) return;
+            AppState.chart.dispatchAction({ type: 'dataZoom', dataZoomIndex: 0, start: 0, end: 100 });
+            AppState.chart.dispatchAction({ type: 'dataZoom', dataZoomIndex: 2, start: 0, end: 100 });
+            if (AppState.chartDays.length) {
+                document.getElementById('d-start').value = AppState.chartDays[0];
+                document.getElementById('d-end').value = AppState.chartDays[AppState.chartDays.length - 1];
+            }
+        }
+    };
+
+    const ProcessModule = {
+        getNextSessionNum(data) {
+            const nums = Utils.getSessionKeys(data)
+                .map((k) => Number(k.replace('session', '')))
+                .filter((n) => Number.isFinite(n));
+            return nums.length ? Math.max(...nums) + 1 : 1;
+        },
+        toNameNumMap(metaObj) {
+            const out = {};
+            Object.keys(metaObj || {}).forEach((num) => {
+                const sessionName = metaObj[num]?.name;
+                if (sessionName) out[sessionName] = String(num);
+            });
+            return out;
+        },
+        ensureMetaAndSession(output, sessionName, mergedMeta) {
+            const nameNumMap = ProcessModule.toNameNumMap(mergedMeta);
+            let targetNum = nameNumMap[sessionName];
+            if (!targetNum) {
+                targetNum = String(ProcessModule.getNextSessionNum(output));
+                mergedMeta[targetNum] = { name: sessionName, opt: {} };
+            }
+
+            const key = `session${targetNum}`;
+            if (!Array.isArray(output[key])) output[key] = [];
+            output.properties = output.properties || {};
+            output.properties.sessionData = JSON.stringify(mergedMeta);
+            return key;
+        },
+        ensurePreviewRow(rows, sessionName) {
+            if (!rows[sessionName]) rows[sessionName] = { sessionName, added: 0, dup: 0, out: 0, final: 0 };
+            return rows[sessionName];
+        },
+        finalizeDataset(data, start, end, enableDedupe, rows, metaObj) {
+            const seen = new Set();
+            let removedDup = 0;
+            let removedOut = 0;
+
+            Utils.getSessionKeys(data).forEach((sk) => {
+                const num = sk.replace('session', '');
+                const sessionName = metaObj[num]?.name || `分组${num}`;
+                const row = ProcessModule.ensurePreviewRow(rows, sessionName);
+                const next = [];
+
+                data[sk].forEach((solve) => {
+                    const day = Utils.solveDay(solve);
+                    if ((start || end) && !Utils.isInRange(day, start, end)) {
+                        row.out += 1;
+                        removedOut += 1;
+                        return;
+                    }
+
+                    const key = Utils.buildSolveKey(solve);
+                    if (!key) return;
+                    if (enableDedupe && seen.has(key)) {
+                        row.dup += 1;
+                        removedDup += 1;
+                        return;
+                    }
+
+                    seen.add(key);
+                    next.push(solve);
+                });
+
+                data[sk] = next;
+                row.final = next.length;
+            });
+
+            return { removedDup, removedOut };
+        },
+        fillFinalCounts(output, rows, mergedMeta) {
+            Object.keys(mergedMeta).forEach((num) => {
+                const sessionName = mergedMeta[num]?.name || `分组${num}`;
+                const key = `session${num}`;
+                const row = ProcessModule.ensurePreviewRow(rows, sessionName);
+                row.final = Array.isArray(output[key]) ? output[key].length : 0;
+            });
+        },
+        countRecords(data) {
+            return Utils.getSessionKeys(data).reduce((acc, sk) => acc + data[sk].length, 0);
+        },
+        downloadText(filename, text) {
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        },
+        renderPreview(rows, totals, mergeMode) {
+            const wrap = document.getElementById('proc-preview');
+            const list = Object.values(rows).sort((a, b) => a.sessionName.localeCompare(b.sessionName, 'zh-CN'));
+            wrap.style.display = 'block';
+
+            const htmlRows = list.map((r) => (
+                `<tr><td>${r.sessionName}</td><td>${r.added}</td><td>${r.dup}</td><td>${r.out}</td><td>${r.final}</td></tr>`
+            )).join('');
+
+            const modeText = mergeMode ? '合并模式' : '截取模式';
+            wrap.innerHTML = `
+                <div class="preview-summary">${modeText} | 新增 ${totals.added}，重复 ${totals.dup}，区间过滤 ${totals.out}，总计 ${totals.total}</div>
+                <table class="preview-table">
+                    <thead>
+                        <tr><th>分组</th><th>新增</th><th>重复跳过</th><th>区间过滤</th><th>最终条数</th></tr>
+                    </thead>
+                    <tbody>${htmlRows}</tbody>
+                </table>
+            `;
+        },
+        async run() {
+            const baseFile = document.getElementById('file-base').files[0];
+            const srcFile = document.getElementById('file-src').files[0];
+            const start = document.getElementById('p-start').value || '';
+            const end = document.getElementById('p-end').value || '';
+            const mergeMode = Boolean(srcFile);
+
+            if (!baseFile) {
+                alert('请上传基础文件');
+                return;
+            }
+            if (start && end && start > end) {
+                alert('区间无效');
+                return;
+            }
+
+            const baseJson = await Utils.readAsJson(baseFile);
+            if (!baseJson) return;
+
+            const output = Utils.deepClone(baseJson);
+            const baseMeta = Utils.parseSessionMeta(baseJson);
+            const mergedMeta = { ...baseMeta };
+            output.properties = output.properties || {};
+            output.properties.sessionData = JSON.stringify(mergedMeta);
+
+            if (srcFile) {
+                const srcJson = await Utils.readAsJson(srcFile);
+                if (!srcJson) return;
+
+                const srcNames = Utils.parseSessionNames(srcJson);
+                Utils.getSessionKeys(srcJson).forEach((srcSessionKey) => {
+                    const srcNum = srcSessionKey.replace('session', '');
+                    const sessionName = srcNames[srcNum] || `分组${srcNum}`;
+                    const targetKey = ProcessModule.ensureMetaAndSession(output, sessionName, mergedMeta);
+                    srcJson[srcSessionKey].forEach((solve) => {
+                        output[targetKey].push(solve);
+                    });
+                });
+            }
+
+            const baselineOutput = Utils.deepClone(baseJson);
+            const baselineRows = {};
+            ProcessModule.finalizeDataset(baselineOutput, start, end, false, baselineRows, baseMeta);
+
+            const previewRows = {};
+            const normalizeStats = ProcessModule.finalizeDataset(output, start, end, mergeMode, previewRows, mergedMeta);
+            ProcessModule.fillFinalCounts(output, previewRows, mergedMeta);
+
+            Object.values(previewRows).forEach((row) => {
+                const baseFinal = baselineRows[row.sessionName]?.final || 0;
+                row.added = mergeMode ? Math.max(0, row.final - baseFinal) : 0;
+            });
+
+            const totals = {
+                added: mergeMode ? Object.values(previewRows).reduce((s, r) => s + r.added, 0) : 0,
+                dup: mergeMode ? normalizeStats.removedDup : 0,
+                out: normalizeStats.removedOut,
+                total: ProcessModule.countRecords(output)
+            };
+            ProcessModule.renderPreview(previewRows, totals, mergeMode);
+
+            const now = new Date();
+            const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+            const filename = `merged_${stamp}.txt`;
+
+            ProcessModule.downloadText(filename, JSON.stringify(output));
+            if (mergeMode) {
+                alert(`完成。新增 ${totals.added} 条，去重 ${totals.dup} 条，区间过滤 ${totals.out} 条，总计 ${totals.total} 条`);
+                return;
+            }
+
+            alert(`完成。截取 ${totals.out} 条，总计 ${totals.total} 条`);
+        }
+    };
+
+    function switchTab(id) {
+        document.querySelectorAll('.tab').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+        const tab = document.querySelector(`.tab[onclick="switchTab('${id}')"]`);
+        if (tab) tab.classList.add('active');
+        document.getElementById(id).classList.add('active');
+    }
+
+    function setName(input, id) {
+        if (!input.files[0]) return;
+        const el = document.getElementById(id);
+        el.innerText = input.files[0].name;
+        el.style.color = 'var(--mint-deep)';
+    }
+
+    function loadSum(input) {
+        SummaryModule.load(input);
+    }
+
+    function draw(key) {
+        SummaryModule.draw(key);
+    }
+
+    function zoom() {
+        SummaryModule.zoom();
+    }
+
+    function reset() {
+        SummaryModule.reset();
+    }
+
+    async function process() {
+        await ProcessModule.run();
+    }
+</script>
+
+</body>
+</html>
