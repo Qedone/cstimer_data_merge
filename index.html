@@ -47,6 +47,30 @@
             letter-spacing: 0.4px;
         }
 
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .lang-switch {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #4B6F5D;
+        }
+
+        .lang-switch select {
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            background: #fff;
+            box-shadow: inset 0 0 0 1px rgba(141, 198, 173, 0.5);
+            font-family: inherit;
+        }
+
         .tabs {
             display: flex;
             justify-content: center;
@@ -294,11 +318,20 @@
 </head>
 <body>
 <div class="container">
-    <h1>CubeInsight</h1>
+    <div class="topbar">
+        <h1 id="app-title">CubeInsight</h1>
+        <div class="lang-switch">
+            <span id="lang-label">语言</span>
+            <select id="lang-switch" onchange="setLanguage(this.value)">
+                <option value="zh" selected>中文</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+    </div>
 
     <div class="tabs">
-        <button class="tab active" onclick="switchTab('sum')">成绩趋势</button>
-        <button class="tab" onclick="switchTab('proc')">数据处理</button>
+        <button id="tab-sum" class="tab active" onclick="switchTab('sum')">成绩趋势</button>
+        <button id="tab-proc" class="tab" onclick="switchTab('proc')">数据处理</button>
     </div>
 
     <div id="sum" class="panel active">
@@ -310,16 +343,16 @@
 
         <div id="ctrls" class="row" style="display: none;">
             <div class="group">
-                <span>分组:</span>
+                <span id="sum-group-label">分组:</span>
                 <select id="sel" onchange="draw()"></select>
             </div>
             <div class="group">
-                <span>范围:</span>
+                <span id="sum-range-label">范围:</span>
                 <input type="date" id="d-start" onchange="zoom()">
-                <span>至</span>
+                <span id="sum-to-label">至</span>
                 <input type="date" id="d-end" onchange="zoom()">
             </div>
-            <button class="btn" onclick="reset()">重置</button>
+            <button id="sum-reset-btn" class="btn" onclick="reset()">重置</button>
         </div>
 
         <div id="sum-axis-hover">在图表内移动到某一天所在纵向区域，可查看该日最佳数据</div>
@@ -327,11 +360,11 @@
         <div id="chart"></div>
 
         <div class="tutorial">
-            <h4>使用教程</h4>
-            <p>1. 上传 txt 文件后选择分组查看图表。</p>
-            <p>2. 在图中悬停散点查看对应单次成绩。</p>
-            <p>3. 在图表内移动到某天所在区域，即可在上方信息栏看到该日最佳 single、最佳 mo3、最佳 ao5 与次数。</p>
-            <p>4. 使用日期输入框和底部滑块快速缩放区间。</p>
+            <h4 id="sum-tutorial-title">使用教程</h4>
+            <p id="sum-tip-1">1. 上传 txt 文件后选择分组查看图表。</p>
+            <p id="sum-tip-2">2. 在图中悬停散点查看对应单次成绩。</p>
+            <p id="sum-tip-3">3. 在图表内移动到某天所在区域，即可在上方信息栏看到该日最佳 single、最佳 mo3、最佳 ao5 与次数。</p>
+            <p id="sum-tip-4">4. 使用日期输入框和底部滑块快速缩放区间。</p>
         </div>
     </div>
 
@@ -339,26 +372,26 @@
         <p id="proc-note">单文件模式支持按时间和分组联合筛选；区间为空默认全量日期</p>
         <div class="row" style="margin-bottom: 20px;">
             <div class="group">
-                <span>区间:</span>
+                <span id="proc-range-label">区间:</span>
                 <input type="date" id="p-start">
-                <span>至</span>
+                <span id="proc-to-label">至</span>
                 <input type="date" id="p-end">
             </div>
         </div>
 
         <div class="row" style="margin-bottom: 16px;">
             <div class="group">
-                <span>分组:</span>
+                <span id="proc-group-label">分组:</span>
                 <select id="p-groups" multiple onchange="onProcGroupChange()"></select>
             </div>
             <div class="group">
-                <button class="btn btn-lite" type="button" onclick="selectAllProcGroups()">全选分组</button>
-                <button class="btn btn-lite" type="button" onclick="clearProcGroups()">清空分组</button>
+                <button id="proc-select-all-btn" class="btn btn-lite" type="button" onclick="selectAllProcGroups()">全选分组</button>
+                <button id="proc-clear-btn" class="btn btn-lite" type="button" onclick="clearProcGroups()">清空分组</button>
             </div>
         </div>
 
         <div id="p-group-picked" class="picked-wrap">
-            <span class="picked-label">已选分组：</span>
+            <span id="picked-label" class="picked-label">已选分组：</span>
             <span class="group-chip-empty">未加载</span>
         </div>
 
@@ -377,20 +410,232 @@
         <button id="proc-run-btn" class="btn btn-large" onclick="runProcessAction()">执行</button>
 
         <div class="tutorial">
-            <h4>使用教程</h4>
-            <p>1. 仅上传基础文件时，可按日期区间 + 分组多选联合筛选后导出。</p>
-            <p>2. 同时上传补充文件会执行合并，并按 timestamp+scramble 去重。</p>
-            <p>3. 分组框支持单击切换，选中结果会显示在“已选分组”中。</p>
-            <p>4. 点击“已选分组”标签后的 × 可快速取消该分组。</p>
-            <p>5. 区间为空时保留全量数据，填写区间后只保留区间内记录。</p>
-            <p>6. 至少选择一个分组才能执行；可用全选分组/清空分组快速调整。</p>
-            <p>7. 执行后查看统计预览，再使用自动下载的结果文件。</p>
-            <p>8. 点击执行后按钮会显示“执行中...”，若失败会弹出错误原因。</p>
+            <h4 id="proc-tutorial-title">使用教程</h4>
+            <p id="proc-tip-1">1. 仅上传基础文件时，可按日期区间 + 分组多选联合筛选后导出。</p>
+            <p id="proc-tip-2">2. 同时上传补充文件会执行合并，并按 timestamp+scramble 去重。</p>
+            <p id="proc-tip-3">3. 分组框支持单击切换，选中结果会显示在“已选分组”中。</p>
+            <p id="proc-tip-4">4. 点击“已选分组”标签后的 × 可快速取消该分组。</p>
+            <p id="proc-tip-5">5. 区间为空时保留全量数据，填写区间后只保留区间内记录。</p>
+            <p id="proc-tip-6">6. 至少选择一个分组才能执行；可用全选分组/清空分组快速调整。</p>
+            <p id="proc-tip-7">7. 执行后查看统计预览，再使用自动下载的结果文件。</p>
+            <p id="proc-tip-8">8. 点击执行后按钮会显示“执行中...”，若失败会弹出错误原因。</p>
         </div>
     </div>
 </div>
 
 <script>
+    const I18N = {
+        zh: {
+            langLabel: '语言',
+            tabSum: '成绩趋势',
+            tabProc: '数据处理',
+            uploadFile: '上传文件 (.txt)',
+            renderChart: '生成图表',
+            rendered: '渲染完成',
+            group: '分组:',
+            range: '范围:',
+            to: '至',
+            reset: '重置',
+            axisHint: '触发方式：在图表内移动到某一天所在纵向区域，可查看该日最佳数据',
+            tutorial: '使用教程',
+            sumTip1: '1. 上传 txt 文件后选择分组查看图表。',
+            sumTip2: '2. 在图中悬停散点查看对应单次成绩。',
+            sumTip3: '3. 在图表内移动到某天所在区域，即可在上方信息栏看到该日最佳 single、最佳 mo3、最佳 ao5 与次数。',
+            sumTip4: '4. 使用日期输入框和底部滑块快速缩放区间。',
+            procNote: '单文件模式支持按时间和分组联合筛选；区间为空默认全量日期',
+            selectAllGroups: '全选分组',
+            clearGroups: '清空分组',
+            pickedGroups: '已选分组：',
+            notLoaded: '未加载',
+            none: '无',
+            baseFile: '基础文件',
+            srcFile: '补充文件',
+            run: '执行',
+            running: '执行中...',
+            procTip1: '1. 仅上传基础文件时，可按日期区间 + 分组多选联合筛选后导出。',
+            procTip2: '2. 同时上传补充文件会执行合并，并按 timestamp+scramble 去重。',
+            procTip3: '3. 分组框支持单击切换，选中结果会显示在“已选分组”中。',
+            procTip4: '4. 点击“已选分组”标签后的 × 可快速取消该分组。',
+            procTip5: '5. 区间为空时保留全量数据，填写区间后只保留区间内记录。',
+            procTip6: '6. 至少选择一个分组才能执行；可用全选分组/清空分组快速调整。',
+            procTip7: '7. 执行后查看统计预览，再使用自动下载的结果文件。',
+            procTip8: '8. 点击执行后按钮会显示“执行中...”，若失败会弹出错误原因。',
+            invalidJson: '文件不是有效 JSON',
+            single: '单次',
+            dailyAvg: '日均',
+            noSession: '没有可用分组',
+            noValidInSession: '该分组没有有效成绩',
+            hoverCount: '单日次数',
+            hoverBestSingle: '单日最佳 single',
+            hoverBestMo3: '单日最佳 mo3',
+            hoverBestAo5: '单日最佳 ao5',
+            pointSingle: '单次',
+            chartAvg: '日均',
+            chartCount: '练习次数',
+            noNameGroup: '未命名分组',
+            groupPrefix: '分组',
+            noBaseFile: '请上传基础文件',
+            invalidRange: '区间无效',
+            needOneGroup: '请至少选择一个分组，或点击“全选分组”',
+            modeMerge: '合并模式',
+            modeFilter: '筛选模式',
+            summaryMerge: '{mode} | 新增 {added}，重复 {dup}，过滤 {out}，总计 {total}',
+            summaryFilter: '{mode} | 过滤 {out}，保留 {total}',
+            colGroup: '分组',
+            colAdded: '新增',
+            colDup: '重复跳过',
+            colOut: '过滤条数',
+            colFinal: '最终条数',
+            doneMerge: '完成。新增 {added} 条，去重 {dup} 条，过滤 {out} 条，总计 {total} 条',
+            doneFilter: '完成。过滤 {out} 条，保留 {total} 条',
+            runFailed: '执行失败：{msg}'
+        },
+        en: {
+            langLabel: 'Language',
+            tabSum: 'Trend',
+            tabProc: 'Process',
+            uploadFile: 'Upload File (.txt)',
+            renderChart: 'Render Chart',
+            rendered: 'Rendered',
+            group: 'Group:',
+            range: 'Range:',
+            to: 'to',
+            reset: 'Reset',
+            axisHint: 'Move inside the chart area of a day to view its best daily stats',
+            tutorial: 'Guide',
+            sumTip1: '1. Upload a txt file and pick a session to render.',
+            sumTip2: '2. Hover a scatter point to view the exact single time.',
+            sumTip3: '3. Move across a day area in chart to view best single/mo3/ao5 and count above.',
+            sumTip4: '4. Use date inputs and the bottom slider to zoom quickly.',
+            procNote: 'Single-file mode supports time + group filtering; empty date range means all dates',
+            selectAllGroups: 'Select All',
+            clearGroups: 'Clear All',
+            pickedGroups: 'Selected Groups:',
+            notLoaded: 'Not loaded',
+            none: 'None',
+            baseFile: 'Base File',
+            srcFile: 'Source File',
+            run: 'Run',
+            running: 'Running...',
+            procTip1: '1. With only base file, export by date range + group multi-select filters.',
+            procTip2: '2. With source file, merge and dedupe by timestamp + scramble.',
+            procTip3: '3. Group selector supports single-click toggle and updates selected chips.',
+            procTip4: '4. Click × on selected chips to quickly remove a group.',
+            procTip5: '5. Empty date range keeps all dates; otherwise keep only in-range records.',
+            procTip6: '6. At least one group is required in single-file mode.',
+            procTip7: '7. Check preview, then use the downloaded output file.',
+            procTip8: '8. Run button shows "Running..."; errors are shown in alert.',
+            invalidJson: 'Invalid JSON file',
+            single: 'Single',
+            dailyAvg: 'Daily Avg',
+            noSession: 'No available session',
+            noValidInSession: 'No valid records in this session',
+            hoverCount: 'Daily count',
+            hoverBestSingle: 'Best single',
+            hoverBestMo3: 'Best mo3',
+            hoverBestAo5: 'Best ao5',
+            pointSingle: 'Single',
+            chartAvg: 'Daily Avg',
+            chartCount: 'Count',
+            noNameGroup: 'Unnamed Group',
+            groupPrefix: 'Group',
+            noBaseFile: 'Please upload base file',
+            invalidRange: 'Invalid date range',
+            needOneGroup: 'Please select at least one group or click Select All',
+            modeMerge: 'Merge Mode',
+            modeFilter: 'Filter Mode',
+            summaryMerge: '{mode} | Added {added}, Duplicates {dup}, Filtered {out}, Total {total}',
+            summaryFilter: '{mode} | Filtered {out}, Kept {total}',
+            colGroup: 'Group',
+            colAdded: 'Added',
+            colDup: 'Dup Skipped',
+            colOut: 'Filtered',
+            colFinal: 'Final',
+            doneMerge: 'Done. Added {added}, deduped {dup}, filtered {out}, total {total}',
+            doneFilter: 'Done. Filtered {out}, kept {total}',
+            runFailed: 'Run failed: {msg}'
+        }
+    };
+
+    const LANG_STORAGE_KEY = 'cubeinsight_lang';
+    let currentLang = 'zh';
+
+    function t(key, vars = {}) {
+        const text = (I18N[currentLang] && I18N[currentLang][key]) || I18N.zh[key] || key;
+        return Object.keys(vars).reduce((acc, k) => acc.replace(`{${k}}`, String(vars[k])), text);
+    }
+
+    function applyLanguage() {
+        document.documentElement.lang = currentLang === 'en' ? 'en' : 'zh-CN';
+        const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+
+        setText('lang-label', t('langLabel'));
+        setText('tab-sum', t('tabSum'));
+        setText('tab-proc', t('tabProc'));
+        setText('d-sum', AppState.raw ? t('rendered') : t('renderChart'));
+        setText('sum-group-label', t('group'));
+        setText('sum-range-label', t('range'));
+        setText('sum-to-label', t('to'));
+        setText('sum-reset-btn', t('reset'));
+        setText('sum-axis-hover', t('axisHint'));
+        setText('sum-tutorial-title', t('tutorial'));
+        setText('sum-tip-1', t('sumTip1'));
+        setText('sum-tip-2', t('sumTip2'));
+        setText('sum-tip-3', t('sumTip3'));
+        setText('sum-tip-4', t('sumTip4'));
+
+        setText('proc-note', t('procNote'));
+        setText('proc-range-label', t('range'));
+        setText('proc-to-label', t('to'));
+        setText('proc-group-label', t('group'));
+        setText('proc-select-all-btn', t('selectAllGroups'));
+        setText('proc-clear-btn', t('clearGroups'));
+        setText('picked-label', t('pickedGroups'));
+        setText('proc-run-btn', t('run'));
+        setText('proc-tutorial-title', t('tutorial'));
+        setText('proc-tip-1', t('procTip1'));
+        setText('proc-tip-2', t('procTip2'));
+        setText('proc-tip-3', t('procTip3'));
+        setText('proc-tip-4', t('procTip4'));
+        setText('proc-tip-5', t('procTip5'));
+        setText('proc-tip-6', t('procTip6'));
+        setText('proc-tip-7', t('procTip7'));
+        setText('proc-tip-8', t('procTip8'));
+
+        if (!document.getElementById('file-sum')?.files?.[0]) setText('t-sum', t('uploadFile'));
+        if (!document.getElementById('file-base')?.files?.[0]) setText('t-base', t('baseFile'));
+        if (!document.getElementById('file-src')?.files?.[0]) setText('t-src', t('srcFile'));
+
+        ProcessModule.updateSelectedGroupHint();
+    }
+
+    function setLanguage(lang) {
+        currentLang = lang === 'en' ? 'en' : 'zh';
+        try {
+            localStorage.setItem(LANG_STORAGE_KEY, currentLang);
+        } catch (e) {
+            // Ignore storage errors in restricted environments.
+        }
+        applyLanguage();
+    }
+
+    function initLanguage() {
+        let stored = null;
+        try {
+            stored = localStorage.getItem(LANG_STORAGE_KEY);
+        } catch (e) {
+            stored = null;
+        }
+
+        currentLang = stored === 'en' ? 'en' : 'zh';
+        const langSelect = document.getElementById('lang-switch');
+        if (langSelect) langSelect.value = currentLang;
+        applyLanguage();
+    }
+
     const AppState = {
         chart: null,
         raw: null,
@@ -409,7 +654,7 @@
             try {
                 return JSON.parse(text);
             } catch (err) {
-                alert('文件不是有效 JSON');
+                alert(t('invalidJson'));
                 return null;
             }
         },
@@ -543,7 +788,7 @@
             const day = Array.isArray(param.data) ? param.data[0] : (param.name || '-');
             if (param.seriesType === 'scatter') {
                 const sec = Array.isArray(param.data) ? param.data[1] : param.value;
-                return `${day}<br/>单次: ${Utils.toFixed2(Number(sec))}`;
+                return `${day}<br/>${t('pointSingle')}: ${Utils.toFixed2(Number(sec))}`;
             }
 
             if (param.seriesType === 'line') {
@@ -551,8 +796,8 @@
                 const avg = Number(param.value);
                 return [
                     day,
-                    `日均: ${Utils.toFixed2(avg)}`,
-                    stat ? `练习次数: ${stat.count}` : ''
+                    `${t('chartAvg')}: ${Utils.toFixed2(avg)}`,
+                    stat ? `${t('chartCount')}: ${stat.count}` : ''
                 ].filter(Boolean).join('<br/>');
             }
 
@@ -564,12 +809,12 @@
             el.style.display = 'block';
 
             if (!day || !AppState.dayStats[day]) {
-                el.innerText = '触发方式：在图表内移动到某一天所在纵向区域，可查看该日最佳数据';
+                el.innerText = t('axisHint');
                 return;
             }
 
             const stat = AppState.dayStats[day];
-            el.innerText = `${day} | 单日最佳 single ${Utils.toFixed2(stat.bestSingle)} | 单日最佳 mo3 ${Utils.toFixed2(stat.bestMo3)} | 单日最佳 ao5 ${Utils.toFixed2(stat.bestAo5)} | 单日次数 ${stat.count}`;
+            el.innerText = `${day} | ${t('hoverBestSingle')} ${Utils.toFixed2(stat.bestSingle)} | ${t('hoverBestMo3')} ${Utils.toFixed2(stat.bestMo3)} | ${t('hoverBestAo5')} ${Utils.toFixed2(stat.bestAo5)} | ${t('hoverCount')} ${stat.count}`;
         },
         load(input) {
             if (!input.files[0]) return;
@@ -592,19 +837,19 @@
                     const num = k.replace('session', '');
                     const opt = document.createElement('option');
                     opt.value = k;
-                    opt.textContent = `${AppState.names[num] || ('分组' + num)} (${AppState.raw[k].length})`;
+                    opt.textContent = `${AppState.names[num] || (t('groupPrefix') + num)} (${AppState.raw[k].length})`;
                     sel.appendChild(opt);
                 });
 
                 if (!first) {
-                    alert('没有可用分组');
+                    alert(t('noSession'));
                     return;
                 }
 
                 document.getElementById('ctrls').style.display = 'flex';
                 document.getElementById('chart').style.display = 'block';
                 SummaryModule.draw(first);
-                document.getElementById('d-sum').innerText = '渲染完成';
+                document.getElementById('d-sum').innerText = t('rendered');
             };
             reader.readAsText(file);
         },
@@ -614,7 +859,7 @@
 
             const stats = SummaryModule.buildSessionStats(AppState.raw, sessionKey);
             if (!stats) {
-                alert('该分组没有有效成绩');
+                alert(t('noValidInSession'));
                 return;
             }
 
@@ -633,7 +878,7 @@
                     trigger: 'item',
                     formatter: SummaryModule.itemTooltipFormatter
                 },
-                legend: { data: ['单次', '日均'], top: 10 },
+                legend: { data: [t('single'), t('dailyAvg')], top: 10 },
                 grid: { left: '6%', right: '4%', bottom: '12%', top: '12%', containLabel: true },
                 xAxis: {
                     type: 'category',
@@ -650,14 +895,14 @@
                 series: [
                     {
                         id: 'sc',
-                        name: '单次',
+                        name: t('single'),
                         type: 'scatter',
                         symbolSize: Utils.getPtSize(days.length),
                         itemStyle: { color: 'rgba(102, 187, 106, 0.25)' },
                         data: scatter
                     },
                     {
-                        name: '日均',
+                        name: t('dailyAvg'),
                         type: 'line',
                         smooth: true,
                         symbol: 'emptyCircle',
@@ -766,13 +1011,13 @@
 
             const label = document.createElement('span');
             label.className = 'picked-label';
-            label.textContent = '已选分组：';
+            label.textContent = t('pickedGroups');
             hint.appendChild(label);
 
             if (!select.options.length) {
                 const empty = document.createElement('span');
                 empty.className = 'group-chip-empty';
-                empty.textContent = '未加载';
+                empty.textContent = t('notLoaded');
                 hint.appendChild(empty);
                 return;
             }
@@ -781,7 +1026,7 @@
             if (!selectedOptions.length) {
                 const empty = document.createElement('span');
                 empty.className = 'group-chip-empty';
-                empty.textContent = '无';
+                empty.textContent = t('none');
                 hint.appendChild(empty);
                 return;
             }
@@ -825,7 +1070,7 @@
                 const num = k.replace('session', '');
                 const opt = document.createElement('option');
                 opt.value = num;
-                opt.textContent = names[num] || `分组${num}`;
+                opt.textContent = names[num] || `${t('groupPrefix')}${num}`;
                 opt.selected = true;
                 select.appendChild(opt);
             });
@@ -875,7 +1120,7 @@
             return key;
         },
         ensurePreviewRow(rows, sessionName) {
-            const name = String(sessionName ?? '未命名分组');
+            const name = String(sessionName ?? t('noNameGroup'));
             if (!rows[name]) rows[name] = { sessionName: name, added: 0, dup: 0, out: 0, final: 0 };
             return rows[name];
         },
@@ -886,7 +1131,7 @@
 
             Utils.getSessionKeys(data).forEach((sk) => {
                 const num = sk.replace('session', '');
-                const sessionName = metaObj[num]?.name || `分组${num}`;
+                const sessionName = metaObj[num]?.name || `${t('groupPrefix')}${num}`;
                 const row = ProcessModule.ensurePreviewRow(rows, sessionName);
 
                 if (allowedGroupNums && !allowedGroupNums.has(num)) {
@@ -927,7 +1172,7 @@
         },
         fillFinalCounts(output, rows, mergedMeta) {
             Object.keys(mergedMeta).forEach((num) => {
-                const sessionName = mergedMeta[num]?.name || `分组${num}`;
+                const sessionName = mergedMeta[num]?.name || `${t('groupPrefix')}${num}`;
                 const key = `session${num}`;
                 const row = ProcessModule.ensurePreviewRow(rows, sessionName);
                 row.final = Array.isArray(output[key]) ? output[key].length : 0;
@@ -960,15 +1205,15 @@
                 `<tr><td>${r.sessionName}</td><td>${r.added}</td><td>${r.dup}</td><td>${r.out}</td><td>${r.final}</td></tr>`
             )).join('');
 
-            const modeText = mergeMode ? '合并模式' : '筛选模式';
+            const modeText = mergeMode ? t('modeMerge') : t('modeFilter');
             const summaryText = mergeMode
-                ? `${modeText} | 新增 ${totals.added}，重复 ${totals.dup}，过滤 ${totals.out}，总计 ${totals.total}`
-                : `${modeText} | 过滤 ${totals.out}，保留 ${totals.total}`;
+                ? t('summaryMerge', { mode: modeText, added: totals.added, dup: totals.dup, out: totals.out, total: totals.total })
+                : t('summaryFilter', { mode: modeText, out: totals.out, total: totals.total });
             wrap.innerHTML = `
                 <div class="preview-summary">${summaryText}</div>
                 <table class="preview-table">
                     <thead>
-                        <tr><th>分组</th><th>新增</th><th>重复跳过</th><th>过滤条数</th><th>最终条数</th></tr>
+                        <tr><th>${t('colGroup')}</th><th>${t('colAdded')}</th><th>${t('colDup')}</th><th>${t('colOut')}</th><th>${t('colFinal')}</th></tr>
                     </thead>
                     <tbody>${htmlRows}</tbody>
                 </table>
@@ -984,15 +1229,15 @@
                 const allowedGroupNums = mergeMode ? null : ProcessModule.getSelectedGroupNums();
 
                 if (!baseFile) {
-                    alert('请上传基础文件');
+                    alert(t('noBaseFile'));
                     return;
                 }
                 if (start && end && start > end) {
-                    alert('区间无效');
+                    alert(t('invalidRange'));
                     return;
                 }
                 if (!mergeMode && allowedGroupNums && allowedGroupNums.size === 0) {
-                    alert('请至少选择一个分组，或点击“全选分组”');
+                    alert(t('needOneGroup'));
                     return;
                 }
 
@@ -1012,7 +1257,7 @@
                     const srcNames = Utils.parseSessionNames(srcJson);
                     Utils.getSessionKeys(srcJson).forEach((srcSessionKey) => {
                         const srcNum = srcSessionKey.replace('session', '');
-                        const sessionName = srcNames[srcNum] || `分组${srcNum}`;
+                        const sessionName = srcNames[srcNum] || `${t('groupPrefix')}${srcNum}`;
                         const targetKey = ProcessModule.ensureMetaAndSession(output, sessionName, mergedMeta);
                         srcJson[srcSessionKey].forEach((solve) => {
                             output[targetKey].push(solve);
@@ -1047,14 +1292,14 @@
 
                 ProcessModule.downloadText(filename, JSON.stringify(output));
                 if (mergeMode) {
-                    alert(`完成。新增 ${totals.added} 条，去重 ${totals.dup} 条，区间过滤 ${totals.out} 条，总计 ${totals.total} 条`);
+                    alert(t('doneMerge', { added: totals.added, dup: totals.dup, out: totals.out, total: totals.total }));
                     return;
                 }
 
-                alert(`完成。过滤 ${totals.out} 条，保留 ${totals.total} 条`);
+                alert(t('doneFilter', { out: totals.out, total: totals.total }));
             } catch (err) {
                 console.error(err);
-                alert(`执行失败：${err && err.message ? err.message : '未知错误'}`);
+                alert(t('runFailed', { msg: err && err.message ? err.message : 'Unknown error' }));
             }
         }
     };
@@ -1120,7 +1365,7 @@
 
         const oldText = btn.innerText;
         btn.disabled = true;
-        btn.innerText = '执行中...';
+        btn.innerText = t('running');
         try {
             await ProcessModule.run();
         } finally {
@@ -1128,6 +1373,8 @@
             btn.innerText = oldText;
         }
     }
+
+    initLanguage();
 </script>
 
 </body>
